@@ -20,14 +20,16 @@
         })
         .then(response => {
             if (response.ok) {
+                console.log(response.status);
+                console.log(response.headers);
                     return response.blob();
                 }
             throw new Error('Network response was not ok.');
         })
         .then(blob => {
-                var audioPlayer = document.getElementById('audioPlayer');
-                audioPlayer.src = URL.createObjectURL(blob);
-                audioPlayer.play();
+            var audioPlayer = document.getElementById('audioPlayer');
+            audioPlayer.src = URL.createObjectURL(blob);
+            audioPlayer.play();
         })
         .catch((error) => {
             console.error('Error:', error);
