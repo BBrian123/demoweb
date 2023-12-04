@@ -13,35 +13,55 @@ app.use(bodyParser.urlencoded({ extended: true })); // for parsing application/x
 //     res.sendFile(filePath);
 // });
 
+// app.post('/playaudio', (req, res) => {
+//     const audioPath = path.join(__dirname, 'demo.mp3'); 
+//     const stat = fs.statSync(audioPath);
+//     const fileSize = stat.size;
+//     const range = req.headers.range;
+//     console.log(range);
+//     if (range) {
+//         const parts = range.replace(/bytes=/, "").split("-");
+//         const start = parseInt(parts[0], 10);
+//         const end = parts[1] ? parseInt(parts[1], 10) : fileSize-1;
+//         const chunksize = (end-start) + 1;
+//         const file = fs.createReadStream(audioPath, {start, end});
+//         const head = {
+//             'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+//             'Accept-Ranges': 'bytes',
+//             'Content-Length': chunksize,
+//             'Content-Type': 'audio/mpeg',
+//         };
+//         res.writeHead(206, head);
+//         file.pipe(res);
+//     } else {
+//         const head = {
+//             'Content-Length': fileSize,
+//             'Content-Type': 'audio/mpeg',
+//         };
+//         res.writeHead(200, head);
+//         fs.createReadStream(audioPath).pipe(res);
+//     }
+// });
+
 app.post('/playaudio', (req, res) => {
     const audioPath = path.join(__dirname, 'demo.mp3'); 
+    const {rangeStart} = req.body;
     const stat = fs.statSync(audioPath);
     const fileSize = stat.size;
-    const range = req.headers.range;
-
-    if (range) {
-        const parts = range.replace(/bytes=/, "").split("-");
-        const start = parseInt(parts[0], 10);
-        const end = parts[1] ? parseInt(parts[1], 10) : fileSize-1;
-        const chunksize = (end-start) + 1;
-        const file = fs.createReadStream(audioPath, {start, end});
-        const head = {
-            'Content-Range': `bytes ${start}-${end}/${fileSize}`,
-            'Accept-Ranges': 'bytes',
-            'Content-Length': chunksize,
-            'Content-Type': 'audio/mpeg',
-        };
-        res.writeHead(206, head);
-        file.pipe(res);
-    } else {
-        const head = {
-            'Content-Length': fileSize,
-            'Content-Type': 'audio/mpeg',
-        };
-        res.writeHead(200, head);
-        fs.createReadStream(audioPath).pipe(res);
-    }
+    const start = parseInt(rangeStart, 10);
+    const end = Math.min(start + 1023999, fileSize - 1); // Limit to 1 MB chunks
+    const chunkSize = (end - start) + 1;
+    const file = fs.createReadStream(audioPath, { start, end });
+    const head = {
+        'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': chunkSize,
+        'Content-Type': 'audio/mpeg',
+    };
+    res.writeHead(206, head);
+    file.pipe(res);
 });
+
 
 app.post('/getphoto',(req,res)=>{
     let filePath = path.join(__dirname, 'demo.jpg'); 

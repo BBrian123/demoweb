@@ -65,23 +65,39 @@
     // });
 
     document.getElementById('playButton').addEventListener('click', function() {
-        fetch('/playaudio', {
-            method: 'POST'
-        })
-        .then(response => {
-            if (response.ok) {
-                    return response.blob();
+        const audioPlayer = document.getElementById('audioPlayer');
+        let offset = 0;
+        function fetchAudioChunk(startOffset) {
+            fetch('/playaudio', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({rangeStart: startOffset })
+            })
+            .then(response => {
+                if (!response.ok && response.status !== 206) {
+                    throw new Error('Network response was not ok');
                 }
-            throw new Error('Network response was not ok.');
-        })
-        .then(blob => {
-            var audioPlayer = document.getElementById('audioPlayer');
-            audioPlayer.src = URL.createObjectURL(blob);
-            audioPlayer.play();
-        })
-        .catch((error) => {
-            console.error('Error:', error);
+                return response.blob();
+            })
+            .then(blob => {
+                const url = URL.createObjectURL(blob);
+                audioPlayer.src = url;
+                audioPlayer.load();
+                audioPlayer.play();
+                offset += 1024000; // Update the offset for the next chunk
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        audioPlayer.addEventListener('ended', () => {
+            fetchAudioChunk(offset); // Fetch the next chunk when the current one ends
         });
+
+        fetchAudioChunk(offset); // Start streaming
     });
 
 
